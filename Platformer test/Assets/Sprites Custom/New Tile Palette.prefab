@@ -273,7 +273,7 @@ Tilemap:
   m_TileColorArray:
   - serializedVersion: 2
     m_RefCount: 1
-    m_Data: {r: 0.87434477, g: 0.4705098, b: 0.5370946, a: 1}
+    m_Data: {r: 0.9972072, g: 0.5492472, b: 0.55662024, a: 1}
   - serializedVersion: 2
     m_RefCount: 9
     m_Data: {r: 1, g: 1, b: 1, a: 1}
@@ -357,7 +357,7 @@ TilemapRenderer:
   m_SortOrder: 0
   m_Mode: 0
   m_DetectChunkCullingBounds: 0
---- !u!114 &7025971206037153037
+--- !u!114 &1901266513835503784
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
