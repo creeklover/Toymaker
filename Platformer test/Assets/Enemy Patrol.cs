@@ -12,11 +12,9 @@ public class EnemyPatrol : MonoBehaviour
 
     public Transform pointB;
 
-    public float speed = 3.5f;
+    public float speed = 2f;
 
-    public float arrivalDistance = 0.15f;
-
-    [Header("VISION")]
+    [Header("PLAYER DETECTION")]
 
     public Transform player;
 
@@ -34,27 +32,21 @@ public class EnemyPatrol : MonoBehaviour
 
     private Transform target;
 
-    private float patrolDirection;
+    private float facingDirection = 1f;
 
-    private bool playerCaught = false;
-
-    void Awake()
-
-    {
-
-        rb = GetComponent<Rigidbody2D>();
-
-    }
+    private bool caught = false;
 
     void Start()
 
     {
 
-        if (pointA  null || pointB  null)
+        rb = GetComponent<Rigidbody2D>();
+
+        if (player == null) return;
 
         {
 
-            Debug.LogError("Assign PatrolPointA and PatrolPointB!", this);
+            Debug.LogError("Assign both patrol points!", this);
 
             enabled = false;
 
@@ -64,15 +56,11 @@ public class EnemyPatrol : MonoBehaviour
 
         target = pointB;
 
-        patrolDirection = Mathf.Sign(
+        facingDirection = Mathf.Sign(
 
             pointB.position.x - pointA.position.x
 
         );
-
-        if (patrolDirection == 0)
-
-            patrolDirection = 1;
 
         if (caughtPopup != null)
 
@@ -84,9 +72,7 @@ public class EnemyPatrol : MonoBehaviour
 
     {
 
-        if (playerCaught)
-
-            return;
+        if (caught) return;
 
         CheckForPlayer();
 
@@ -96,9 +82,7 @@ public class EnemyPatrol : MonoBehaviour
 
     {
 
-        if (playerCaught)
-
-            return;
+        if (caught) return;
 
         Patrol();
 
@@ -108,45 +92,39 @@ public class EnemyPatrol : MonoBehaviour
 
     {
 
-        float distance = target.position.x - rb.position.x;
+        float targetX = target.position.x;
 
-        float stoppingDistance = Mathf.Max(
+        float currentX = rb.position.x;
 
-            arrivalDistance,
+        float newX = Mathf.MoveTowards(
+
+            currentX,
+
+            targetX,
 
             speed * Time.fixedDeltaTime
 
         );
 
-        // Reached the patrol point
+        rb.MovePosition(
 
-        if (Mathf.Abs(distance) <= stoppingDistance)
+            new Vector2(newX, rb.position.y)
+
+        );
+
+        if (Mathf.Abs(targetX - currentX) < 0.05f)
 
         {
 
             target = target == pointA ? pointB : pointA;
 
-            patrolDirection = Mathf.Sign(
+            facingDirection = Mathf.Sign(
 
                 target.position.x - rb.position.x
 
             );
 
-            rb.velocity = new Vector2(0f, rb.velocity.y);
-
-            return;
-
         }
-
-        // Move horizontally while preserving vertical physics
-
-        rb.velocity = new Vector2(
-
-            patrolDirection * speed,
-
-            rb.velocity.y
-
-        );
 
     }
 
@@ -154,63 +132,47 @@ public class EnemyPatrol : MonoBehaviour
 
     {
 
-        if (player == null)
+        if (player == null) return;
+
+        Vector2 direction =
+
+            (Vector2)player.position - rb.position;
+
+        float distance = direction.magnitude;
+
+        if (distance > sightRange || distance == 0f)
 
             return;
 
-        Vector2 origin = rb.position;
+        direction.Normalize();
 
-        Vector2 directionToPlayer =
+        Vector2 forward = new Vector2(
 
-            (Vector2)player.position - origin;
-
-        float distance = directionToPlayer.magnitude;
-
-        if (distance > sightRange || distance == 0)
-
-            return;
-
-        directionToPlayer.Normalize();
-
-        // Check that the player is in front of the enemy
-
-        Vector2 forward = new Vector2(patrolDirection, 0f);
-
-        float dot = Vector2.Dot(forward, directionToPlayer);
-
-        float requiredDot = Mathf.Cos(
-
-            sightAngle  0.5f  Mathf.Deg2Rad
+            facingDirection, 0f
 
         );
 
-        if (dot < requiredDot)
+        float angle = Vector2.Angle(forward, direction);
+
+        if (angle > sightAngle / 2f)
 
             return;
 
-        // Check whether a wall or carriage blocks vision
+        RaycastHit2D hit = Physics2D.Raycast(
 
-        if (obstacleLayer.value != 0)
+            rb.position,
 
-        {
+            direction,
 
-            RaycastHit2D hit = Physics2D.Raycast(
+            distance,
 
-                origin,
+            obstacleLayer
 
-                directionToPlayer,
+        );
 
-                distance,
+        if (hit.collider != null)
 
-                obstacleLayer
-
-            );
-
-            if (hit.collider != null)
-
-                return;
-
-        }
+            return;
 
         CatchPlayer();
 
@@ -220,13 +182,9 @@ public class EnemyPatrol : MonoBehaviour
 
     {
 
-        if (playerCaught)
+        caught = true;
 
-            return;
-
-        playerCaught = true;
-
-        rb.velocity = Vector2.zero;
+        rb.linearVelocity = Vector2.zero;
 
         if (caughtPopup != null)
 
@@ -234,7 +192,7 @@ public class EnemyPatrol : MonoBehaviour
 
         Time.timeScale = 0f;
 
-        Debug.Log("Player caught by enemy!");
+        Debug.Log("PLAYER CAUGHT!");
 
     }
 
